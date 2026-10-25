@@ -956,7 +956,7 @@ def _action_update(job: dict[str, Any], a: dict[str, Any]) -> str:
 
 _JOBLESS_ACTIONS = {"create": _action_create, "list": _action_list}
 _JOB_ACTIONS = {
-    "remove": _action_remove, "update": _action_update,
+    "remove": _action_remove, "delete": _action_remove, "update": _action_update,
     "run": _action_run, "run_now": _action_run, "trigger": _action_run,
     "pause": lambda job, a: _job_state_result(pause_job(job["id"], reason=a["reason"])),
     "resume": lambda job, a: _job_state_result(resume_job(job["id"])),
@@ -1032,7 +1032,11 @@ def cronjob(
             return error
         handler = _JOB_ACTIONS.get(normalized)
         if handler is None:
-            return tool_error(f"Unknown cron action '{action}'", success=False)
+            supported = "create, list, update, pause, resume, remove (alias: delete), run"
+            return tool_error(
+                f"Unknown cron action '{action}'. Supported actions: {supported}",
+                success=False,
+            )
         return handler(job, a)
     except Exception as e:
         return tool_error(str(e), success=False)
@@ -1065,7 +1069,7 @@ Jobs run in a fresh session with no current-chat context, so prompts must be sel
             "paused_reason": {"type": "string", "description": "Create only: auditable reason; requires paused=true."},
             "action": {
                 "type": "string",
-                "description": "One of: create, list, update, pause, resume, remove, run. When action=create, the 'schedule' and 'prompt' fields are REQUIRED."
+                "description": "One of: create, list, update, pause, resume, remove (alias: delete), run. When action=create, the 'schedule' and 'prompt' fields are REQUIRED."
             },
             "job_id": {
                 "type": "string",

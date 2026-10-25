@@ -302,6 +302,35 @@ class TestUnifiedCronjobTool:
         assert listing["jobs"][0]["prompt_preview"] == ""
         assert listing["jobs"][0]["schedule"] == "every 60m"
 
+    def test_remove_deletes_the_job(self):
+        created = json.loads(cronjob(action="create", prompt="Check", schedule="every 1h"))
+        job_id = created["job_id"]
+
+        removed = json.loads(cronjob(action="remove", job_id=job_id))
+
+        assert removed["success"] is True
+        assert removed["removed_job"]["id"] == job_id
+        assert json.loads(cronjob(action="list"))["count"] == 0
+
+    def test_delete_is_an_alias_for_remove(self):
+        created = json.loads(cronjob(action="create", prompt="Check", schedule="every 1h"))
+        job_id = created["job_id"]
+
+        removed = json.loads(cronjob(action="delete", job_id=job_id))
+
+        assert removed["success"] is True
+        assert json.loads(cronjob(action="list"))["count"] == 0
+
+    def test_unknown_action_lists_the_supported_actions(self):
+        created = json.loads(cronjob(action="create", prompt="Check", schedule="every 1h"))
+        job_id = created["job_id"]
+
+        result = json.loads(cronjob(action="destroy", job_id=job_id))
+
+        assert result["success"] is False
+        assert "Supported actions:" in result["error"]
+        assert "delete" in result["error"]
+
     def test_pause_and_resume(self):
         created = json.loads(cronjob(action="create", prompt="Check", schedule="every 1h"))
         job_id = created["job_id"]
